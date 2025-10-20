@@ -1,0 +1,1 @@
+<img src="{{ asset('edures2.png') }}" width="150">
