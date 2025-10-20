@@ -88,7 +88,10 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-Route::get('/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/o/payment/callback', [SubscriptionController::class, 'paymentCallback'])->name('payment.callback');
+    Route::get('/payment/cancelled', [SubscriptionController::class, 'paymentCancelled'])->name('payment.cancelled');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

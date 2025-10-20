@@ -15,7 +15,7 @@ class SubscriptionController extends Controller
     {
         $plans = Plan::active()->get();
         $user = auth()->user();
-        
+
         // Get user's current subscription info
         $currentSubscription = $user->currentSubscription();
         $hasActiveSubscription = $user->hasActivePaidSubscription();
@@ -23,7 +23,7 @@ class SubscriptionController extends Controller
         $hasUsedFreeTrial = $user->hasUsedFreeTrial();
 
         return view('subscriptions.plans', compact(
-            'plans', 
+            'plans',
             'currentSubscription',
             'hasActiveSubscription',
             'hasActiveTrial',
@@ -67,7 +67,6 @@ class SubscriptionController extends Controller
 
     public function initiatePayment(Plan $plan)
     {
-
         $user = auth()->user();
 
         // Check if user already has active PAID subscription
@@ -76,24 +75,31 @@ class SubscriptionController extends Controller
                 ->with('error', 'You already have an active subscription.');
         }
 
+        // Validate plan has valid price
+        if ($plan->price <= 0) {
+            Log::error('Invalid plan price', ['plan_id' => $plan->id, 'price' => $plan->price]);
+            return redirect()->back()->with('error', 'Invalid plan pricing. Please contact support.');
+        }
+
         // Validate Paystack credentials
-        $paystackSecret = env('PAYSTACK_SECRET_KEY');
+        $paystackSecret = config('services.paystack.secret_key');
         if (!$paystackSecret) {
             Log::error('Paystack secret key not configured');
             return redirect()->back()->with('error', 'Payment system configuration error. Please contact support.');
         }
 
-        $payment = Payment::create([
-            'user_id' => $user->id,
-            'plan_id' => $plan->id,
-            'amount' => $plan->price,
-            'payment_reference' => 'PSK_' . uniqid() . time(),
-            'status' => 'pending',
-        ]);
-
         try {
+            // Create payment record with better reference
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'amount' => $plan->price,
+                'payment_reference' => 'PSK_' . uniqid() . '_' . time() . '_' . rand(1000, 9999),
+                'status' => 'pending',
+            ]);
+
             $paystack = new Paystack($paystackSecret);
-            
+
             Log::info('Initiating Paystack payment', [
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
@@ -102,28 +108,50 @@ class SubscriptionController extends Controller
                 'email' => $user->email
             ]);
 
-            // Use the correct callback URL (without subscriber prefix)
-            $callbackUrl = route('payment.callback');
-            
+            // Handle callback URL for different environments
+            $callbackUrl = $this->getCallbackUrl();
+
             Log::info('Callback URL being used', ['callback_url' => $callbackUrl]);
 
-            $transaction = $paystack->transaction->initialize([
+            // Prepare transaction data
+            $transactionData = [
                 'email' => $user->email,
-                'amount' => $plan->price * 100, // Paystack expects amount in kobo
+                'amount' => (int)($plan->price * 100), // Convert to kobo and ensure integer
                 'reference' => $payment->payment_reference,
                 'callback_url' => $callbackUrl,
                 'metadata' => [
                     'user_id' => $user->id,
                     'plan_id' => $plan->id,
-                    'payment_id' => $payment->id
+                    'payment_id' => $payment->id,
+                    'cancel_action' => route('payment.cancelled') // Add cancellation URL
                 ]
-            ]);
+            ];
+
+            // Add currency if not default (NGN)
+            if (config('services.paystack.currency', 'NGN') !== 'NGN') {
+                $transactionData['currency'] = config('services.paystack.currency');
+            }
+
+            Log::debug('Paystack transaction data', $transactionData);
+
+            $transaction = $paystack->transaction->initialize($transactionData);
+
+            // Validate response
+            if (!$transaction->status || !isset($transaction->data->authorization_url)) {
+                throw new \Exception('Invalid response from Paystack: ' . ($transaction->message ?? 'Unknown error'));
+            }
 
             // Log successful initialization
             Log::info('Paystack payment initialized successfully', [
                 'reference' => $payment->payment_reference,
-                'authorization_url' => $transaction->data->authorization_url
+                'authorization_url' => $transaction->data->authorization_url,
+                'access_code' => $transaction->data->access_code ?? 'N/A'
             ]);
+
+            // Update payment with access code if available
+            if (isset($transaction->data->access_code)) {
+                $payment->update(['gateway_reference' => $transaction->data->access_code]);
+            }
 
             return redirect($transaction->data->authorization_url);
 
@@ -132,25 +160,58 @@ class SubscriptionController extends Controller
             Log::error('Paystack payment initialization failed', [
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
-                'amount' => $plan->price,
-                'reference' => $payment->payment_reference,
+                'amount' => $plan->price ?? 'N/A',
+                'reference' => $payment->payment_reference ?? 'N/A',
                 'error_message' => $e->getMessage(),
                 'error_file' => $e->getFile(),
                 'error_line' => $e->getLine(),
-                'paystack_secret_set' => !empty($paystackSecret)
+                'paystack_secret_set' => !empty($paystackSecret),
+                'callback_url' => $callbackUrl ?? 'N/A'
             ]);
 
-            // Update payment status to failed
-            $payment->update(['status' => 'failed']);
+            // Update payment status to failed if payment record was created
+            if (isset($payment) && $payment instanceof Payment) {
+                $payment->update(['status' => 'failed', 'failure_reason' => $e->getMessage()]);
+            }
 
-            return redirect()->back()->with('error', 'Payment initialization failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Unable to initialize payment. Please try again or contact support.');
         }
+    }
+
+    public function paymentCancelled(){
+        return redirect()->route('contents.index')
+            ->with('success', 'Payment was cancelled.');
+    }
+
+    /**
+     * Get appropriate callback URL based on environment
+     */
+    protected function getCallbackUrl()
+    {
+        $baseUrl = route('payment.callback');
+
+        // For local development, you might need to use a public URL
+        if (app()->environment('local')) {
+            // Option 1: Use ngrok if available
+            // return 'https://your-ngrok-url.ngrok.io/payment/callback';
+
+            // Option 2: Use localhost (may not work with Paystack)
+            // return 'http://localhost:8000/payment/callback';
+
+            // Option 3: Use null (Paystack will use their default)
+            // return null;
+
+            // For now, use the base URL and hope it works
+            Log::warning('Using local callback URL - may not work with Paystack', ['url' => $baseUrl]);
+        }
+
+        return $baseUrl;
     }
 
     public function paymentCallback(Request $request)
     {
         $reference = $request->query('reference');
-        
+
         Log::info('Paystack callback received', [
             'reference' => $reference,
             'all_query_params' => $request->query(),
@@ -249,7 +310,7 @@ class SubscriptionController extends Controller
     public function paymentHistory(Request $request)
     {
         $user = auth()->user();
-        
+
         // Get user's payments with plan information
         $payments = Payment::with('plan')
             ->where('user_id', $user->id)
