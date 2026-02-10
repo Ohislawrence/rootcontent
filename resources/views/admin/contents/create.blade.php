@@ -81,8 +81,8 @@
                         <label for="file" class="block text-gray-700 text-sm font-bold mb-2">File *</label>
                         <input type="file" name="file" id="file" required
                             class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            accept=".pdf,.doc,.docx,.ppt,.pptx,.txt">
-                        <p class="text-gray-600 text-xs mt-1">Supported formats: PDF, DOC, DOCX, PPT, PPTX, TXT (Max: 10MB)</p>
+                            accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.ppsx,.zip">
+                        <p class="text-gray-600 text-xs mt-1">Supported formats: PDF, DOC, DOCX, PPT, PPTX, TXT,PPSX, ZIP (Max: 20MB)</p>
                         @error('file')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror

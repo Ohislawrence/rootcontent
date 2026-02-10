@@ -12,7 +12,7 @@
                 <h1 class="text-3xl font-bold text-gray-900">Content Management</h1>
                 <p class="mt-2 text-gray-600">Manage and organize your educational resources efficiently.</p>
             </div>
-            <a href="{{ route('admin.contents.create') }}" 
+            <a href="{{ route('admin.contents.create') }}"
                 class="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -84,10 +84,10 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center space-x-3">
-                                    <a href="#" class="text-blue-600 hover:text-blue-900" title="View">
+                                    <a href="{{ route('admin.contents.show', $content) }}" class="text-blue-600 hover:text-blue-900" title="View">
                                         <x-heroicon-o-eye class="w-5 h-5 inline" />
                                     </a>
-                                    <a href="#" class="text-green-600 hover:text-green-900" title="Edit">
+                                    <a href="{{ route('admin.contents.edit', $content) }}" class="text-green-600 hover:text-green-900" title="Edit">
                                         <x-heroicon-o-pencil-square class="w-5 h-5 inline" />
                                     </a>
                                     <form action="{{ route('admin.contents.destroy', $content) }}" method="POST" class="inline">
@@ -108,7 +108,7 @@
                                         </svg>
                                         <p class="text-gray-700 font-medium mb-1">No content found</p>
                                         <p class="text-sm text-gray-500 mb-3">Get started by uploading your first educational resource.</p>
-                                        <a href="{{ route('admin.contents.create') }}" 
+                                        <a href="{{ route('admin.contents.create') }}"
                                             class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition">
                                             Upload Content
                                         </a>

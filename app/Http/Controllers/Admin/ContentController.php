@@ -21,7 +21,7 @@ class ContentController extends Controller
     {
         $gradeLevels = GradeLevel::orderBy('order')->get();
         $subjects = Subject::orderBy('name')->get();
-        
+
         return view('admin.contents.create', compact('gradeLevels', 'subjects'));
     }
 
@@ -30,7 +30,7 @@ class ContentController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,txt|max:10240', // 10MB max
+            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,txt,ppsx,zip|max:20480', // 20MB max
             'grade_level_id' => 'required|exists:grade_levels,id',
             'subject_id' => 'required|exists:subjects,id',
         ]);
@@ -61,7 +61,7 @@ class ContentController extends Controller
     {
         $gradeLevels = GradeLevel::orderBy('order')->get();
         $subjects = Subject::orderBy('name')->get();
-        
+
         return view('admin.contents.edit', compact('content', 'gradeLevels', 'subjects'));
     }
 
@@ -70,7 +70,7 @@ class ContentController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt|max:10240',
+            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,ppsx,zip|max:10240',
             'grade_level_id' => 'required|exists:grade_levels,id',
             'subject_id' => 'required|exists:subjects,id',
         ]);
@@ -86,10 +86,10 @@ class ContentController extends Controller
         if ($request->hasFile('file')) {
             // Delete old file
             Storage::disk('public')->delete($content->file_path);
-            
+
             $file = $request->file('file');
             $filePath = $file->store('contents', 'public');
-            
+
             $data['file_path'] = $filePath;
             $data['file_type'] = $file->getClientOriginalExtension();
         }
@@ -113,7 +113,7 @@ class ContentController extends Controller
     {
         // Track download (if you have download tracking)
         // ContentDownload::create(['content_id' => $content->id, 'user_id' => auth()->id()]);
-        
+
         return Storage::disk('public')->download($content->file_path, $content->title . '.' . $content->file_type);
     }
 }

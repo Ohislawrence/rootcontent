@@ -8,12 +8,16 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\ContentController;
+use App\Http\Controllers\FrontpagesController;
 use App\Http\Controllers\SubscriberDashboardController;
 use App\Http\Controllers\SubscriptionController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
+// Frontend routes
+Route::get('/', [FrontpagesController::class, 'index'])->name('home');
+Route::get('/content', [FrontpagesController::class, 'contentAll'])->name('content.all');
+Route::get('/content/{id}/{slug?}', [FrontpagesController::class, 'contentSingle'])->name('content.single');
+
 
 Route::get('/dashboard', function () {
     if (auth()->check()) {
@@ -31,7 +35,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart-data');
     Route::resource('contents', AdminContentController::class);
-    Route::get('admin/contents/{content}/download', [AdminContentController::class, 'download'])->name('admin.contents.download');
+    Route::get('admin/contents/{content}/download', [AdminContentController::class, 'download'])->name('contents.download');
     // Admin Subscriber Management Routes
     Route::prefix('subscribers')->name('subscribers.')->group(function () {
         Route::get('/', [SubscriberController::class, 'index'])->name('index');
