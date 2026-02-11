@@ -36,5 +36,9 @@
             </main>
         </div>
         @stack('scripts')
+        <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/1234567890" target="_blank" class="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 animate-bounce">
+        <i class="fab fa-whatsapp text-2xl"></i>
+    </a>
     </body>
 </html>

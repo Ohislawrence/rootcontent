@@ -24,6 +24,11 @@
                             </x-nav-link>
                         </div>
                         <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                            <x-nav-link :href="route('admin.subjects.index')" :active="request()->routeIs('admin.subjects.*')">
+                                {{ __('Manage Subjects') }}
+                            </x-nav-link>
+                        </div>
+                        <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                             <x-nav-link :href="route('admin.subscribers.index')" :active="request()->routeIs('admin.subscribers.*')">
                                 {{ __('See Subcribers') }}
                             </x-nav-link>
@@ -38,7 +43,7 @@
                                 {{ __('All Plans') }}
                             </x-nav-link>
                         </div>
-                    
+
                     @elseif(auth()->user()->isSubscriber())
                     <!-- Logo -->
                         <div class="shrink-0 flex items-center">

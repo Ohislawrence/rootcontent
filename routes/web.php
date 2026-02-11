@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\FrontpagesController;
@@ -66,12 +67,31 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     });
 
     Route::prefix('payments')->name('payments.')->group(function () {
-    Route::get('/', [PaymentController::class, 'index'])->name('index');
-    Route::get('/statistics', [PaymentController::class, 'statistics'])->name('statistics');
-    Route::get('/export', [PaymentController::class, 'export'])->name('export');
-    Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
+        Route::get('/', [PaymentController::class, 'index'])->name('index');
+        Route::get('/statistics', [PaymentController::class, 'statistics'])->name('statistics');
+        Route::get('/export', [PaymentController::class, 'export'])->name('export');
+        Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
     });
+
+    //Manage subject
+    Route::prefix('subjects')->name('subjects.')->group(function () {
+        Route::get('/', [SubjectController::class, 'index'])->name('index');
+        Route::get('/create', [SubjectController::class, 'create'])->name('create');
+        Route::post('/', [SubjectController::class, 'store'])->name('store');
+        Route::get('/{subject}', [SubjectController::class, 'show'])->name('show');
+        Route::get('/{subject}/edit', [SubjectController::class, 'edit'])->name('edit');
+        Route::put('/{subject}', [SubjectController::class, 'update'])->name('update');
+        Route::delete('/{subject}', [SubjectController::class, 'destroy'])->name('destroy');
+        Route::get('/export', [SubjectController::class, 'export'])->name('export');
+
+        // Additional useful routes
+        Route::patch('/{subject}/toggle-status', [SubjectController::class, 'toggleStatus'])->name('toggle-status');
+        Route::delete('/bulk-destroy', [SubjectController::class, 'bulkDestroy'])->name('bulk-destroy');
+    });
+
 });
+
+
 
 // Subscription Routes
 
